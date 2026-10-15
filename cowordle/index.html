@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>CoWordle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #181b22;
+    --line: #2b303b;
+    --text: #eef0f4;
+    --muted: #8b93a3;
+    --green: #3fa864;
+    --yellow: #d6b13a;
+    --grey: #3a3f4a;
+    --key: #555c6b;
+    --p1: #4ea8ff;
+    --p2: #ff7a59;
+    --accent: #a78bfa;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: radial-gradient(1200px 600px at 50% -200px, #1d2130 0%, var(--bg) 60%);
+    color: var(--text);
+    font-family: Inter, system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 16px; min-height: 100%; display: flex; flex-direction: column; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 4px 0 12px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+  .logo { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 1px; }
+  .logo span { display: inline-block; width: 26px; height: 26px; line-height: 26px; text-align: center; border-radius: 5px; margin-right: 2px; font-size: 17px; }
+  .logo .g { background: var(--green); } .logo .y { background: var(--yellow); } .logo .k { background: var(--grey); }
+  .roomtag { font-size: 13px; color: var(--muted); }
+  .roomtag b { color: var(--text); letter-spacing: 3px; font-family: 'Space Grotesk', Inter, system-ui, sans-serif; font-size: 16px; }
+  .hidden { display: none !important; }
+
+  /* Home */
+  .home { display: grid; gap: 18px; max-width: 520px; margin: 20px auto; width: 100%; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+  .card h2 { margin: 0 0 12px; font-family: 'Space Grotesk', Inter, system-ui, sans-serif; font-size: 18px; }
+  input[type=text] {
+    width: 100%; padding: 13px 14px; border-radius: 10px; border: 1px solid var(--line);
+    background: #0d0f13; color: var(--text); font-size: 16px; font-family: inherit; outline: none;
+  }
+  input[type=text]:focus { border-color: var(--accent); }
+  .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .mode {
+    border: 2px solid var(--line); border-radius: 12px; padding: 12px; cursor: pointer; background: #0d0f13;
+    transition: border-color .15s, transform .1s;
+  }
+  .mode:hover { transform: translateY(-1px); }
+  .mode.sel { border-color: var(--accent); background: #17142a; }
+  .mode .t { font-weight: 800; margin-bottom: 4px; }
+  .mode .d { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+  button {
+    font-family: inherit; font-weight: 800; font-size: 15px; border: none; border-radius: 10px; padding: 13px 16px;
+    cursor: pointer; color: #fff; background: var(--accent); transition: filter .15s, transform .05s;
+  }
+  button:hover { filter: brightness(1.1); }
+  button:active { transform: scale(.98); }
+  button:disabled { opacity: .45; cursor: default; }
+  button.ghost { background: transparent; border: 1px solid var(--line); color: var(--text); }
+  .row2 { display: flex; gap: 10px; }
+  .row2 input { flex: 1; text-transform: uppercase; letter-spacing: 4px; }
+  .w100 { width: 100%; }
+
+  /* Lobby */
+  .lobby { max-width: 520px; margin: 20px auto; width: 100%; display: grid; gap: 16px; text-align: center; }
+  .bigcode { font-family: 'Space Grotesk', Inter, system-ui, sans-serif; font-size: 54px; letter-spacing: 12px; font-weight: 700; margin: 4px 0; cursor: pointer; }
+  .hint { color: var(--muted); font-size: 13px; }
+  .plist { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .pill { padding: 8px 14px; border-radius: 999px; background: #0d0f13; border: 1px solid var(--line); font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .pill.off { opacity: .4; }
+
+  /* Game */
+  .game { flex: 1; display: flex; flex-direction: column; align-items: center; }
+  .statusbar { min-height: 28px; text-align: center; font-weight: 700; margin-bottom: 10px; display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
+  .score { display: flex; gap: 14px; justify-content: center; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .score b { color: var(--text); }
+  .boards { display: flex; gap: 28px; align-items: flex-start; justify-content: center; flex-wrap: wrap; }
+  .bwrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .blabel { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; color: var(--muted); }
+  .board { display: grid; grid-template-rows: repeat(6, 1fr); gap: 6px; }
+  .brow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; position: relative; }
+  .tile {
+    width: 58px; height: 58px; border: 2px solid var(--line); border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Grotesk', Inter, system-ui, sans-serif; font-weight: 700; font-size: 28px; text-transform: uppercase; user-select: none;
+  }
+  .tile.filled { border-color: #6b7383; animation: pop .1s ease; }
+  .tile.peer { border-color: currentColor; }
+  .tile.green { background: var(--green); border-color: var(--green); }
+  .tile.yellow { background: var(--yellow); border-color: var(--yellow); }
+  .tile.grey { background: var(--grey); border-color: var(--grey); }
+  .tile.flip { animation: flip .5s ease both; }
+  .brow .by { position: absolute; left: -16px; top: 50%; transform: translateY(-50%); width: 8px; height: 8px; border-radius: 50%; }
+  .brow.shake { animation: shake .4s; }
+  .board.mini .tile { width: 30px; height: 30px; font-size: 14px; border-radius: 4px; }
+  .board.mini { gap: 4px; } .board.mini .brow { gap: 4px; }
+  .board.mini .tile.filled { background: transparent; border-color: currentColor; box-shadow: inset 0 0 0 2px currentColor; }
+
+  @keyframes pop { 50% { transform: scale(1.1); } }
+  @keyframes flip {
+    0% { transform: rotateX(0); }
+    50% { transform: rotateX(90deg); }
+    100% { transform: rotateX(0); }
+  }
+  @keyframes shake { 20%,60% { transform: translateX(-6px); } 40%,80% { transform: translateX(6px); } }
+
+  .kb { margin-top: 18px; width: 100%; max-width: 520px; display: grid; gap: 7px; }
+  .krow { display: flex; gap: 6px; justify-content: center; }
+  .key {
+    flex: 1; max-width: 46px; height: 56px; padding: 0; border-radius: 7px; background: var(--key); font-size: 15px; text-transform: uppercase;
+  }
+  .key.wide { max-width: 72px; flex: 1.5; font-size: 12px; }
+  .key.green { background: var(--green); } .key.yellow { background: var(--yellow); } .key.grey { background: #24272e; color: #9aa1ae; }
+  .kb.locked { opacity: .5; }
+
+  .over { margin-top: 14px; text-align: center; display: grid; gap: 10px; justify-items: center; }
+  .reveal { font-family: 'Space Grotesk', Inter, system-ui, sans-serif; font-size: 28px; letter-spacing: 6px; font-weight: 700; }
+  .toast {
+    position: fixed; top: 76px; left: 50%; transform: translateX(-50%); background: #fff; color: #111; font-weight: 800;
+    padding: 10px 16px; border-radius: 8px; z-index: 10; pointer-events: none; transition: opacity .2s; opacity: 0;
+  }
+  .toast.show { opacity: 1; }
+  .turnbadge { padding: 4px 10px; border-radius: 999px; font-size: 13px; color: #111; }
+
+  @media (max-width: 640px) {
+    .tile { width: 50px; height: 50px; font-size: 24px; }
+    .boards { gap: 16px; }
+    .board.mini .tile { width: 22px; height: 22px; font-size: 11px; }
+    .key { height: 50px; }
+    .bigcode { font-size: 42px; letter-spacing: 8px; }
+    .vs .boards { flex-direction: column-reverse; align-items: center; }
+  }
+  @media (max-width: 380px) {
+    .tile { width: 44px; height: 44px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo"><span class="g">C</span><span class="y">O</span><span class="k">W</span>ordle</div>
+    <div class="roomtag hidden" id="roomTag">Room <b id="roomTagCode"></b></div>
+  </header>
+
+  <!-- HOME -->
+  <section class="home" id="home">
+    <div class="card">
+      <h2>Your name</h2>
+      <input type="text" id="name" maxlength="14" placeholder="Type your name">
+    </div>
+    <div class="card">
+      <h2>Make a room</h2>
+      <div class="modes">
+        <div class="mode sel" data-mode="coop">
+          <div class="t">🤝 Co-op</div>
+          <div class="d">One board, take turns. Build on each other's guesses to crack it together.</div>
+        </div>
+        <div class="mode" data-mode="versus">
+          <div class="t">⚔️ Versus</div>
+          <div class="d">Same word, race each other. You see their colours, not their letters.</div>
+        </div>
+      </div>
+      <button class="w100" id="createBtn">Create room</button>
+    </div>
+    <div class="card">
+      <h2>Join a friend</h2>
+      <div class="row2">
+        <input type="text" id="joinCode" maxlength="4" placeholder="CODE">
+        <button id="joinBtn">Join</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOBBY -->
+  <section class="lobby hidden" id="lobby">
+    <div class="card">
+      <div class="hint">Send this code to your friend (tap to copy)</div>
+      <div class="bigcode" id="lobbyCode"></div>
+      <div class="plist" id="lobbyPlayers"></div>
+    </div>
+    <div class="card">
+      <h2 style="margin-top:0">Mode</h2>
+      <div class="modes" id="lobbyModes">
+        <div class="mode" data-mode="coop"><div class="t">🤝 Co-op</div><div class="d">Take turns on one board</div></div>
+        <div class="mode" data-mode="versus"><div class="t">⚔️ Versus</div><div class="d">Race on the same word</div></div>
+      </div>
+      <div class="hint" id="lobbyMsg"></div>
+      <button class="w100" id="startBtn" style="margin-top:10px">Start</button>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section class="game hidden" id="game">
+    <div class="score" id="score"></div>
+    <div class="statusbar" id="status"></div>
+    <div class="boards" id="boards"></div>
+    <div class="over hidden" id="over">
+      <div class="reveal" id="reveal"></div>
+      <div id="overMsg" style="font-weight:700"></div>
+      <div class="row2">
+        <button id="againBtn">Next word</button>
+        <button class="ghost" id="lobbyBtn">Change mode</button>
+      </div>
+      <div class="hint" id="waitHost"></div>
+    </div>
+    <div class="kb" id="kb"></div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+const $ = id => document.getElementById(id);
+let S = null;              // latest room state
+let input = '';            // what I'm typing
+let peer = {};             // live typing from the other player
+let pickedMode = 'coop';
+let seenRows = {};         // for flip animations, key -> rows already shown
+let backToLobby = false;
+
+try { $('name').value = localStorage.getItem('cw_name') || ''; } catch (e) {}
+
+// ---------- home ----------
+document.querySelectorAll('#home .mode').forEach(m => m.onclick = () => {
+  pickedMode = m.dataset.mode;
+  document.querySelectorAll('#home .mode').forEach(x => x.classList.toggle('sel', x === m));
+});
+function myName() {
+  const n = $('name').value.trim() || 'Player';
+  try { localStorage.setItem('cw_name', n); } catch (e) {}
+  return n;
+}
+$('createBtn').onclick = () => socket.emit('create', { name: myName(), mode: pickedMode });
+$('joinBtn').onclick = () => {
+  const code = $('joinCode').value.trim();
+  if (code.length !== 4) return toast('Enter the 4 letter code');
+  socket.emit('join', { name: myName(), code });
+};
+$('joinCode').addEventListener('keydown', e => { if (e.key === 'Enter') $('joinBtn').click(); });
+
+// ---------- lobby ----------
+document.querySelectorAll('#lobbyModes .mode').forEach(m => m.onclick = () => socket.emit('setMode', m.dataset.mode));
+$('startBtn').onclick = () => socket.emit('start');
+$('lobbyCode').onclick = () => {
+  navigator.clipboard?.writeText(S.code).then(() => toast('Copied'), () => {});
+};
+$('againBtn').onclick = () => socket.emit('start');
+$('lobbyBtn').onclick = () => { backToLobby = true; render(); };
+
+// ---------- socket ----------
+socket.on('state', st => {
+  const prevRound = S ? S.round : -1;
+  const prevStatus = S ? S.status : null;
+  const prevCoopRows = S && S.board ? S.board.length : -1;
+  S = st;
+  if (st.round !== prevRound) { input = ''; peer = {}; seenRows = {}; }
+  if (st.status === 'playing' && prevStatus !== 'playing') backToLobby = false;
+  if (st.mode === 'coop') {
+    // a guess landed, so the turn moved on: clear the live typing
+    if (st.board && st.board.length !== prevCoopRows) peer = {};
+  } else if (st.boards) {
+    for (const id in st.boards) if (id !== socket.id) {
+      const n = st.boards[id].length;
+      if (seenRows['peerlen' + id] !== n) { peer[id] = 0; seenRows['peerlen' + id] = n; }
+    }
+  }
+  render();
+});
+socket.on('peerTyping', d => {
+  peer[d.id] = S && S.mode === 'coop' ? d.letters : d.count;
+  if (S && S.status === 'playing') renderGame();
+});
+socket.on('errorMsg', m => toast(m));
+socket.on('badWord', m => { toast(m); shakeRow(); });
+
+// ---------- rendering ----------
+function playerColor(id) {
+  if (!S) return 'var(--p1)';
+  const i = S.players.findIndex(p => p.id === id);
+  return i === 1 ? 'var(--p2)' : 'var(--p1)';
+}
+function nameOf(id) {
+  const p = S.players.find(p => p.id === id);
+  return p ? p.name : '?';
+}
+
+function render() {
+  if (!S) return;
+  $('home').classList.add('hidden');
+  $('roomTag').classList.remove('hidden');
+  $('roomTagCode').textContent = S.code;
+  const inLobby = S.status === 'lobby' || (S.status === 'over' && backToLobby);
+  $('lobby').classList.toggle('hidden', !inLobby);
+  $('game').classList.toggle('hidden', inLobby);
+  if (inLobby) renderLobby(); else renderGame();
+}
+
+function renderLobby() {
+  $('lobbyCode').textContent = S.code;
+  $('lobbyPlayers').innerHTML = S.players.map(p =>
+    `<div class="pill ${p.connected ? '' : 'off'}"><span class="dot" style="background:${playerColor(p.id)}"></span>${esc(p.name)}${p.id === socket.id ? ' (you)' : ''}</div>`
+  ).join('') + (S.players.filter(p => p.connected).length < 2 ? `<div class="pill off">waiting…</div>` : '');
+  document.querySelectorAll('#lobbyModes .mode').forEach(m => m.classList.toggle('sel', m.dataset.mode === S.mode));
+  const host = S.hostId === socket.id;
+  const ready = S.players.filter(p => p.connected).length >= 2;
+  $('startBtn').classList.toggle('hidden', !host);
+  $('startBtn').disabled = !ready;
+  $('startBtn').textContent = S.round > 0 ? 'Start next word' : 'Start';
+  $('lobbyMsg').textContent = S.message || (host ? (ready ? 'Pick a mode and hit start' : 'Waiting for your friend to join') : 'Waiting for the host to start');
+  document.querySelectorAll('#lobbyModes .mode').forEach(m => m.style.pointerEvents = host ? '' : 'none');
+}
+
+function canType() {
+  if (!S || S.status !== 'playing') return false;
+  if (S.mode === 'coop') return S.turnId === socket.id;
+  const mine = S.boards[socket.id] || [];
+  const solved = mine.some(r => r.colors.every(c => c === 'green'));
+  return mine.length < 6 && !solved;
+}
+
+function renderGame() {
+  const meFirst = [...S.players].sort((a, b) => (a.id === socket.id ? -1 : b.id === socket.id ? 1 : 0));
+  $('score').innerHTML = S.mode === 'coop'
+    ? `Words solved together: <b>${S.players[0] ? S.players[0].wins : 0}</b>`
+    : meFirst.map(p => `<span><span class="dot" style="background:${playerColor(p.id)}"></span> ${esc(p.name)} <b>${p.wins}</b></span>`).join('');
+
+  document.querySelector('.game').classList.toggle('vs', S.mode === 'versus');
+  const boards = $('boards');
+  boards.innerHTML = '';
+
+  if (S.mode === 'coop') {
+    const myTurn = S.turnId === socket.id;
+    $('status').innerHTML = S.status === 'playing'
+      ? `<span class="turnbadge" style="background:${playerColor(S.turnId)}">${myTurn ? 'Your turn' : esc(nameOf(S.turnId)) + "'s turn"}</span>`
+      : '';
+    const typing = myTurn ? { letters: input } : { letters: peer[S.turnId] || '', peerColor: playerColor(S.turnId) };
+    boards.appendChild(buildBoard('coop', S.board, typing, false, true));
+  } else {
+    const me = socket.id;
+    const opp = S.players.find(p => p.id !== me);
+    const mine = S.boards[me] || [];
+    let st = '';
+    if (S.status === 'playing') {
+      if (mine.length >= 6) st = 'Out of guesses, watch them sweat';
+      else st = 'Race! First to solve wins';
+    }
+    $('status').textContent = st;
+    const myWrap = wrapBoard('You', playerColor(me), buildBoard('me', mine, { letters: canType() ? input : '' }, false, false));
+    boards.appendChild(myWrap);
+    if (opp) {
+      const oppRows = S.boards[opp.id] || [];
+      const oppTyping = S.status === 'playing' ? { count: peer[opp.id] || 0, peerColor: playerColor(opp.id) } : {};
+      boards.appendChild(wrapBoard(esc(opp.name), playerColor(opp.id), buildBoard('opp' + opp.id, oppRows, oppTyping, true, false)));
+    }
+  }
+
+  // end of round
+  const over = S.status === 'over';
+  $('over').classList.toggle('hidden', !over);
+  if (over) {
+    $('reveal').textContent = S.word.toUpperCase();
+    let msg = S.message;
+    if (S.mode === 'versus' && S.winnerId) msg = S.winnerId === socket.id ? '🏆 You won!' : `😤 ${esc(nameOf(S.winnerId))} beat you to it`;
+    $('overMsg').innerHTML = msg;
+    const host = S.hostId === socket.id;
+    $('againBtn').classList.toggle('hidden', !host);
+    $('lobbyBtn').classList.toggle('hidden', !host);
+    $('waitHost').textContent = host ? '' : 'Waiting for the host to pick the next word';
+  }
+  renderKeyboard();
+}
+
+function wrapBoard(label, color, board) {
+  const w = document.createElement('div');
+  w.className = 'bwrap';
+  w.innerHTML = `<div class="blabel"><span class="dot" style="background:${color}"></span>${label}</div>`;
+  w.appendChild(board);
+  return w;
+}
+
+// rows: submitted rows. typing: {letters} or {count}. mini: small hidden board
+function buildBoard(key, rows, typing, mini, showBy) {
+  const b = document.createElement('div');
+  b.className = 'board' + (mini ? ' mini' : '');
+  const already = seenRows[key] || 0;
+  for (let r = 0; r < 6; r++) {
+    const row = document.createElement('div');
+    row.className = 'brow';
+    if (r === rows.length) row.id = key === 'me' || key === 'coop' ? 'activeRow' : '';
+    const data = rows[r];
+    if (data && showBy && data.by) {
+      const by = document.createElement('div');
+      by.className = 'by';
+      by.style.background = playerColor(data.by);
+      row.appendChild(by);
+    }
+    for (let c = 0; c < 5; c++) {
+      const t = document.createElement('div');
+      t.className = 'tile';
+      if (data) {
+        if (data.letters) t.textContent = data.letters[c];
+        t.classList.add(data.colors[c]);
+        if (r >= already) { t.classList.add('flip'); t.style.animationDelay = (c * 0.12) + 's'; }
+      } else if (r === rows.length && S.status === 'playing') {
+        if (typing.letters && typing.letters[c]) {
+          t.textContent = typing.letters[c];
+          t.classList.add('filled');
+          if (typing.peerColor) { t.classList.add('peer'); t.style.color = typing.peerColor; }
+        } else if (typing.count && c < typing.count) {
+          t.classList.add('filled');
+          if (typing.peerColor) t.style.color = typing.peerColor;
+        }
+      }
+      row.appendChild(t);
+    }
+    b.appendChild(row);
+  }
+  seenRows[key] = rows.length;
+  return b;
+}
+
+const KEYS = ['qwertyuiop', 'asdfghjkl', 'ZxcvbnmB'];
+function renderKeyboard() {
+  const kb = $('kb');
+  const best = {};
+  const rank = { grey: 1, yellow: 2, green: 3 };
+  const rows = S.mode === 'coop' ? S.board : (S.boards[socket.id] || []);
+  for (const r of rows) for (let i = 0; i < 5; i++) {
+    const l = r.letters[i], c = r.colors[i];
+    if (!best[l] || rank[c] > rank[best[l]]) best[l] = c;
+  }
+  kb.innerHTML = '';
+  kb.classList.toggle('locked', !canType());
+  kb.classList.toggle('hidden', S.status === 'over');
+  for (const line of KEYS) {
+    const row = document.createElement('div');
+    row.className = 'krow';
+    for (const ch of line) {
+      const k = document.createElement('button');
+      k.className = 'key';
+      if (ch === 'Z') { k.textContent = 'Enter'; k.classList.add('wide'); k.onclick = () => press('Enter'); }
+      else if (ch === 'B') { k.textContent = '⌫'; k.classList.add('wide'); k.onclick = () => press('Backspace'); }
+      else { k.textContent = ch; if (best[ch]) k.classList.add(best[ch]); k.onclick = () => press(ch); }
+      row.appendChild(k);
+    }
+    kb.appendChild(row);
+  }
+}
+
+// ---------- input ----------
+function press(k) {
+  if (!canType()) {
+    if (S && S.status === 'playing' && S.mode === 'coop') toast('Wait for your turn');
+    return;
+  }
+  if (k === 'Enter') {
+    if (input.length < 5) { toast('Not enough letters'); shakeRow(); return; }
+    socket.emit('guess', input);
+    input = '';
+  } else if (k === 'Backspace') {
+    input = input.slice(0, -1);
+  } else if (/^[a-z]$/.test(k) && input.length < 5) {
+    input += k;
+  } else return;
+  sendTyping();
+  renderGame();
+}
+function sendTyping() {
+  if (S.mode === 'coop') socket.emit('typing', { letters: input });
+  else socket.emit('typing', { count: input.length });
+}
+document.addEventListener('keydown', e => {
+  if (!S || $('game').classList.contains('hidden')) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key;
+  if (k === 'Enter' || k === 'Backspace') { e.preventDefault(); press(k); }
+  else if (/^[a-zA-Z]$/.test(k)) press(k.toLowerCase());
+});
+
+function shakeRow() {
+  const r = $('activeRow');
+  if (!r) return;
+  r.classList.remove('shake'); void r.offsetWidth; r.classList.add('shake');
+}
+let tt;
+function toast(m) {
+  const t = $('toast');
+  t.textContent = m; t.classList.add('show');
+  clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 1600);
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+</script>
+</body>
+</html>
